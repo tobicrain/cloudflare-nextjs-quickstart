@@ -15,6 +15,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
       lang="en"
       suppressHydrationWarning
     >
+      <head>
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+</head>
       <body className={clsx('bg-gray-950 text-gray-50 p-4', fontFamily.variable)}>{children}</body>
     </html>
   );
