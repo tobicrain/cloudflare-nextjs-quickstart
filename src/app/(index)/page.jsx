@@ -2,121 +2,108 @@
 
 import React, { useState, useEffect } from "react";
 
-const App = () => {
-  const [touchPoints, setTouchPoints] = useState([]);
-  const [selectedFinger, setSelectedFinger] = useState(null);
+function App() {
+  const [fingers, setFingers] = useState({});
+  const [timer, setTimer] = useState(null);
+  const [highlightedFinger, setHighlightedFinger] = useState(null);
 
-  // Toleranzbereich für Bewegungen in Pixeln
-  const TOLERANCE = 20;
+  // Start Timer if there are any registered fingers
+  useEffect(() => {
+    if (Object.keys(fingers).length > 0) {
+      if (timer) clearTimeout(timer);
+      const newTimer = setTimeout(() => {
+        const fingerIds = Object.keys(fingers);
+        if (fingerIds.length > 0) {
+          const randomFingerId =
+            fingerIds[Math.floor(Math.random() * fingerIds.length)];
+          setHighlightedFinger(randomFingerId);
+        }
+      }, 2000);
+      setTimer(newTimer);
+    } else {
+      if (timer) clearTimeout(timer);
+      setHighlightedFinger(null);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [fingers]);
 
   const handleTouchStart = (e) => {
-    const newTouches = Array.from(e.touches).map((touch) => ({
-      id: touch.identifier,
-      startX: touch.clientX,
-      startY: touch.clientY,
-      x: touch.clientX,
-      y: touch.clientY,
-    }));
-
-    setTouchPoints((prevTouches) => {
-      // Merge new touches with existing ones (keep existing IDs)
-      const mergedTouches = [...prevTouches];
-      newTouches.forEach((newTouch) => {
-        if (!prevTouches.some((t) => t.id === newTouch.id)) {
-          mergedTouches.push(newTouch);
-        }
-      });
-      return mergedTouches;
-    });
+    const newFingers = { ...fingers };
+    for (let touch of e.changedTouches) {
+      newFingers[touch.identifier] = {
+        startX: touch.clientX,
+        startY: touch.clientY,
+        x: touch.clientX,
+        y: touch.clientY,
+      };
+    }
+    setFingers(newFingers);
   };
 
   const handleTouchMove = (e) => {
-    const updatedTouches = Array.from(e.touches).map((touch) => {
-      const existingTouch = touchPoints.find((t) => t.id === touch.identifier);
-      if (existingTouch) {
-        // Update position but keep the original startX/startY
-        return {
-          ...existingTouch,
-          x: touch.clientX,
-          y: touch.clientY,
-        };
+    const updatedFingers = { ...fingers };
+    for (let touch of e.changedTouches) {
+      const finger = updatedFingers[touch.identifier];
+      if (finger) {
+        const dx = Math.abs(finger.startX - touch.clientX);
+        const dy = Math.abs(finger.startY - touch.clientY);
+        if (dx > 20 || dy > 20) {
+          finger.x = touch.clientX;
+          finger.y = touch.clientY;
+        }
       }
-      return null;
-    }).filter(Boolean);
-
-    setTouchPoints(updatedTouches);
+    }
+    setFingers(updatedFingers);
   };
 
   const handleTouchEnd = (e) => {
-    const remainingTouches = Array.from(e.touches).map((touch) => ({
-      id: touch.identifier,
-      startX: touch.clientX,
-      startY: touch.clientY,
-      x: touch.clientX,
-      y: touch.clientY,
-    }));
-    setTouchPoints(remainingTouches);
-
-    if (remainingTouches.length === 0) {
-      setSelectedFinger(null); // Reset if no touches left
+    const updatedFingers = { ...fingers };
+    for (let touch of e.changedTouches) {
+      delete updatedFingers[touch.identifier];
     }
+    setFingers(updatedFingers);
   };
 
-  useEffect(() => {
-    let timer;
-
-    if (touchPoints.length > 0) {
-      // Check if all fingers are within the tolerance range
-      const isWithinTolerance = touchPoints.every(
-        (touch) =>
-          Math.abs(touch.x - touch.startX) <= TOLERANCE &&
-          Math.abs(touch.y - touch.startY) <= TOLERANCE
+  const renderCircles = () => {
+    return Object.keys(fingers).map((fingerId) => {
+      const { x, y } = fingers[fingerId];
+      const isHighlighted = highlightedFinger === fingerId;
+      return (
+        <div
+          key={fingerId}
+          style={{
+            position: "absolute",
+            left: x - 25 + "px",
+            top: y - 25 + "px",
+            width: "50px",
+            height: "50px",
+            borderRadius: "50%",
+            backgroundColor: isHighlighted ? "red" : "blue",
+            border: isHighlighted ? "2px solid yellow" : "2px solid white",
+          }}
+        ></div>
       );
-
-      if (isWithinTolerance) {
-        timer = setTimeout(() => {
-          const randomIndex = Math.floor(Math.random() * touchPoints.length);
-          setSelectedFinger(touchPoints[randomIndex].id);
-        }, 2000); // 2-second timer
-      }
-    } else {
-      setSelectedFinger(null); // Reset if no fingers
-    }
-
-    return () => clearTimeout(timer); // Clear timer if touchPoints change
-  }, [touchPoints]);
+    });
+  };
 
   return (
     <div
       style={{
+        position: "relative",
         width: "100vw",
         height: "100vh",
         backgroundColor: "#f0f0f0",
         overflow: "hidden",
-        position: "relative",
       }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {touchPoints.map((point) => (
-        <div
-          key={point.id}
-          style={{
-            position: "absolute",
-            left: point.x - 50,
-            top: point.y - 50,
-            width: "100px",
-            height: "100px",
-            backgroundColor:
-              point.id === selectedFinger ? "red" : "blue", // Highlight selected finger
-            borderRadius: "50%",
-            transition: "background-color 0.3s", // Smooth transition
-          }}
-        />
-      ))}
+      {renderCircles()}
     </div>
   );
-};
+}
 
 export default App;
