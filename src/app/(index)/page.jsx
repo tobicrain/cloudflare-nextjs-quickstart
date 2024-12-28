@@ -6,52 +6,85 @@ const App = () => {
   const [touchPoints, setTouchPoints] = useState([]);
   const [selectedFinger, setSelectedFinger] = useState(null);
 
-  useEffect(() => {
-    let timer;
-    if (touchPoints.length > 0) {
-      // Start timer when a new touch is registered
-      timer = setTimeout(() => {
-        const randomIndex = Math.floor(Math.random() * touchPoints.length);
-        setSelectedFinger(touchPoints[randomIndex].id); // Select a random finger
-      }, 2000); // 2-second timer
-    } else {
-      setSelectedFinger(null); // Reset selection when no touches
-    }
-
-    return () => clearTimeout(timer); // Clear timer if touchPoints change
-  }, [touchPoints]);
+  // Toleranzbereich für Bewegungen in Pixeln
+  const TOLERANCE = 20;
 
   const handleTouchStart = (e) => {
-    const points = Array.from(e.touches).map((touch) => ({
+    const newTouches = Array.from(e.touches).map((touch) => ({
       id: touch.identifier,
+      startX: touch.clientX,
+      startY: touch.clientY,
       x: touch.clientX,
       y: touch.clientY,
     }));
-    setTouchPoints(points);
+
+    setTouchPoints((prevTouches) => {
+      // Merge new touches with existing ones (keep existing IDs)
+      const mergedTouches = [...prevTouches];
+      newTouches.forEach((newTouch) => {
+        if (!prevTouches.some((t) => t.id === newTouch.id)) {
+          mergedTouches.push(newTouch);
+        }
+      });
+      return mergedTouches;
+    });
   };
 
   const handleTouchMove = (e) => {
-    const points = Array.from(e.touches).map((touch) => ({
-      id: touch.identifier,
-      x: touch.clientX,
-      y: touch.clientY,
-    }));
-    setTouchPoints(points); // Update positions of all fingers
+    const updatedTouches = Array.from(e.touches).map((touch) => {
+      const existingTouch = touchPoints.find((t) => t.id === touch.identifier);
+      if (existingTouch) {
+        // Update position but keep the original startX/startY
+        return {
+          ...existingTouch,
+          x: touch.clientX,
+          y: touch.clientY,
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
+    setTouchPoints(updatedTouches);
   };
 
   const handleTouchEnd = (e) => {
     const remainingTouches = Array.from(e.touches).map((touch) => ({
       id: touch.identifier,
+      startX: touch.clientX,
+      startY: touch.clientY,
       x: touch.clientX,
       y: touch.clientY,
     }));
-    setTouchPoints(remainingTouches); // Update to remaining touches
+    setTouchPoints(remainingTouches);
 
-    // Reset selection if no fingers are left
     if (remainingTouches.length === 0) {
-      setSelectedFinger(null);
+      setSelectedFinger(null); // Reset if no touches left
     }
   };
+
+  useEffect(() => {
+    let timer;
+
+    if (touchPoints.length > 0) {
+      // Check if all fingers are within the tolerance range
+      const isWithinTolerance = touchPoints.every(
+        (touch) =>
+          Math.abs(touch.x - touch.startX) <= TOLERANCE &&
+          Math.abs(touch.y - touch.startY) <= TOLERANCE
+      );
+
+      if (isWithinTolerance) {
+        timer = setTimeout(() => {
+          const randomIndex = Math.floor(Math.random() * touchPoints.length);
+          setSelectedFinger(touchPoints[randomIndex].id);
+        }, 2000); // 2-second timer
+      }
+    } else {
+      setSelectedFinger(null); // Reset if no fingers
+    }
+
+    return () => clearTimeout(timer); // Clear timer if touchPoints change
+  }, [touchPoints]);
 
   return (
     <div
