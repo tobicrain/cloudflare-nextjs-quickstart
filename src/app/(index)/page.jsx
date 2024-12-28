@@ -6,6 +6,21 @@ const App = () => {
   const [touchPoints, setTouchPoints] = useState([]);
   const [selectedFinger, setSelectedFinger] = useState(null);
 
+  useEffect(() => {
+    let timer;
+    if (touchPoints.length > 0) {
+      // Start timer when a new touch is registered
+      timer = setTimeout(() => {
+        const randomIndex = Math.floor(Math.random() * touchPoints.length);
+        setSelectedFinger(touchPoints[randomIndex].id); // Select a random finger
+      }, 2000); // 2-second timer
+    } else {
+      setSelectedFinger(null); // Reset selection when no touches
+    }
+
+    return () => clearTimeout(timer); // Clear timer if touchPoints change
+  }, [touchPoints]);
+
   const handleTouchStart = (e) => {
     const points = Array.from(e.touches).map((touch) => ({
       id: touch.identifier,
@@ -21,34 +36,22 @@ const App = () => {
       x: touch.clientX,
       y: touch.clientY,
     }));
-    setTouchPoints(points);
+    setTouchPoints(points); // Update positions of all fingers
   };
 
   const handleTouchEnd = (e) => {
-    const points = Array.from(e.touches).map((touch) => ({
+    const remainingTouches = Array.from(e.touches).map((touch) => ({
       id: touch.identifier,
       x: touch.clientX,
       y: touch.clientY,
     }));
-    setTouchPoints(points);
+    setTouchPoints(remainingTouches); // Update to remaining touches
 
-    // Reset selection when all fingers are removed
-    if (points.length === 0) {
+    // Reset selection if no fingers are left
+    if (remainingTouches.length === 0) {
       setSelectedFinger(null);
     }
   };
-
-  useEffect(() => {
-    if (touchPoints.length > 0) {
-      // Select a random finger after 3 seconds
-      const timer = setTimeout(() => {
-        const randomIndex = Math.floor(Math.random() * touchPoints.length);
-        setSelectedFinger(touchPoints[randomIndex].id);
-      }, 3000);
-
-      return () => clearTimeout(timer); // Clear the timer if touchPoints change
-    }
-  }, [touchPoints]);
 
   return (
     <div
@@ -73,8 +76,9 @@ const App = () => {
             width: "100px",
             height: "100px",
             backgroundColor:
-              point.id === selectedFinger ? "red" : "blue", // Selected finger turns red
+              point.id === selectedFinger ? "red" : "blue", // Highlight selected finger
             borderRadius: "50%",
+            transition: "background-color 0.3s", // Smooth transition
           }}
         />
       ))}
