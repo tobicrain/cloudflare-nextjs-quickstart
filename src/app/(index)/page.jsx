@@ -5,7 +5,6 @@ import React, { useState, useEffect } from "react";
 const App = () => {
   const [touchPoints, setTouchPoints] = useState([]);
   const [selectedFinger, setSelectedFinger] = useState(null);
-  const [isBlinking, setIsBlinking] = useState(false);
 
   const handleTouchStart = (e) => {
     const points = Array.from(e.touches).map((touch) => ({
@@ -32,26 +31,22 @@ const App = () => {
       y: touch.clientY,
     }));
     setTouchPoints(points);
-  };
 
-  const handleSelectFinger = () => {
-    if (touchPoints.length > 0) {
-      const randomIndex = Math.floor(Math.random() * touchPoints.length);
-      setSelectedFinger(touchPoints[randomIndex].id);
-      setIsBlinking(true);
-
-      // Stop blinking after 3 seconds
-      setTimeout(() => {
-        setIsBlinking(false);
-        setSelectedFinger(null); // Reset selection
-      }, 3000);
+    // Reset selection when all fingers are removed
+    if (points.length === 0) {
+      setSelectedFinger(null);
     }
   };
 
   useEffect(() => {
-    // Automatically select a finger after 3 seconds if there are active touch points
     if (touchPoints.length > 0) {
-      handleSelectFinger();
+      // Select a random finger after 3 seconds
+      const timer = setTimeout(() => {
+        const randomIndex = Math.floor(Math.random() * touchPoints.length);
+        setSelectedFinger(touchPoints[randomIndex].id);
+      }, 3000);
+
+      return () => clearTimeout(timer); // Clear the timer if touchPoints change
     }
   }, [touchPoints]);
 
@@ -77,24 +72,12 @@ const App = () => {
             top: point.y - 50,
             width: "100px",
             height: "100px",
-            backgroundColor: point.id === selectedFinger && isBlinking ? "red" : "blue",
+            backgroundColor:
+              point.id === selectedFinger ? "red" : "blue", // Selected finger turns red
             borderRadius: "50%",
-            animation:
-              point.id === selectedFinger && isBlinking
-                ? "blink 0.5s infinite"
-                : "none",
           }}
         />
       ))}
-      <style>
-        {`
-          @keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-          }
-        `}
-      </style>
     </div>
   );
 };
