@@ -18,6 +18,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <head>
 <meta name="viewport" content="width=device-width, user-scalable=no" />
 </head>
+      <link rel="manifest" href="/manifest.json" />
       <body className={clsx('bg-gray-950 text-gray-50 p-4', fontFamily.variable)}>{children}</body>
     </html>
   );
