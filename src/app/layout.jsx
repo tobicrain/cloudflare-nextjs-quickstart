@@ -5,11 +5,8 @@ import { Inter } from 'next/font/google';
 
 const fontFamily = Inter({ subsets: ['latin'], variable: '--font-primary' });
 
-interface RootLayoutProps {
-  children: React.ReactNode;
-}
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
