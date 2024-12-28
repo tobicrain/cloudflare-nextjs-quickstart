@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import "./App.css"; // Für Styles
+import "./App.css";
 
-const CIRCLE_SIZE = 50;
+const CIRCLE_SIZE = 80; // Größere Kreise
 
 const App = () => {
   const [touches, setTouches] = useState({});
   const [highlightedId, setHighlightedId] = useState(null);
+  const [isPulsing, setIsPulsing] = useState(false);
   const timerRef = useRef(null);
 
   const handleTouchStart = (e) => {
@@ -18,6 +19,7 @@ const App = () => {
       newTouches[touch.identifier] = {
         x: touch.clientX,
         y: touch.clientY,
+        color: generateRandomColor(),
       };
     }
 
@@ -35,6 +37,7 @@ const App = () => {
     for (const touch of e.changedTouches) {
       if (updatedTouches[touch.identifier]) {
         updatedTouches[touch.identifier] = {
+          ...updatedTouches[touch.identifier],
           x: touch.clientX,
           y: touch.clientY,
         };
@@ -57,6 +60,7 @@ const App = () => {
     if (Object.keys(updatedTouches).length === 0) {
       resetTimer(true);
       setHighlightedId(null);
+      setIsPulsing(false);
     }
   };
 
@@ -66,15 +70,26 @@ const App = () => {
     }
 
     if (!clear) {
+      setIsPulsing(true); // Start Pulsieren
       timerRef.current = setTimeout(() => {
         const touchIds = Object.keys(touches);
         if (touchIds.length > 0) {
           const randomId =
             touchIds[Math.floor(Math.random() * touchIds.length)];
           setHighlightedId(randomId);
+          setIsPulsing(false); // Pulsieren stoppen
         }
       }, 2000);
     }
+  };
+
+  const generateRandomColor = () => {
+    const letters = "0123456789ABCDEF";
+    let color = "#";
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
   };
 
   useEffect(() => {
@@ -95,10 +110,18 @@ const App = () => {
       {Object.entries(touches).map(([id, pos]) => (
         <div
           key={id}
-          className={`circle ${highlightedId === id ? "highlighted" : ""}`}
+          className={`circle ${
+            isPulsing ? "pulsing" : highlightedId === id ? "highlighted" : ""
+          }`}
           style={{
             left: pos.x - CIRCLE_SIZE / 2,
             top: pos.y - CIRCLE_SIZE / 2,
+            backgroundColor:
+              highlightedId === null
+                ? pos.color
+                : highlightedId === id
+                ? "red"
+                : "black",
           }}
         ></div>
       ))}
