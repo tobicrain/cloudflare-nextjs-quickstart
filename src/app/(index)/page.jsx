@@ -1,109 +1,109 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import "./App.css"; // Für Styles
 
-function App() {
-  const [fingers, setFingers] = useState({});
-  const [timer, setTimer] = useState(null);
-  const [highlightedFinger, setHighlightedFinger] = useState(null);
+const CIRCLE_SIZE = 50;
 
-  // Start Timer if there are any registered fingers
-  useEffect(() => {
-    if (Object.keys(fingers).length > 0) {
-      if (timer) clearTimeout(timer);
-      const newTimer = setTimeout(() => {
-        const fingerIds = Object.keys(fingers);
-        if (fingerIds.length > 0) {
-          const randomFingerId =
-            fingerIds[Math.floor(Math.random() * fingerIds.length)];
-          setHighlightedFinger(randomFingerId);
-        }
-      }, 2000);
-      setTimer(newTimer);
-    } else {
-      if (timer) clearTimeout(timer);
-      setHighlightedFinger(null);
-    }
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [fingers]);
+const App = () => {
+  const [touches, setTouches] = useState({});
+  const [highlightedId, setHighlightedId] = useState(null);
+  const timerRef = useRef(null);
 
   const handleTouchStart = (e) => {
-    const newFingers = { ...fingers };
-    for (let touch of e.changedTouches) {
-      newFingers[touch.identifier] = {
-        startX: touch.clientX,
-        startY: touch.clientY,
+    e.preventDefault();
+    const newTouches = { ...touches };
+
+    for (const touch of e.changedTouches) {
+      newTouches[touch.identifier] = {
         x: touch.clientX,
         y: touch.clientY,
       };
     }
-    setFingers(newFingers);
+
+    setTouches(newTouches);
+
+    if (Object.keys(newTouches).length >= 2) {
+      resetTimer();
+    }
   };
 
   const handleTouchMove = (e) => {
-    const updatedFingers = { ...fingers };
-    for (let touch of e.changedTouches) {
-      const finger = updatedFingers[touch.identifier];
-      if (finger) {
-        const dx = Math.abs(finger.startX - touch.clientX);
-        const dy = Math.abs(finger.startY - touch.clientY);
-        if (dx > 20 || dy > 20) {
-          finger.x = touch.clientX;
-          finger.y = touch.clientY;
-        }
+    e.preventDefault();
+    const updatedTouches = { ...touches };
+
+    for (const touch of e.changedTouches) {
+      if (updatedTouches[touch.identifier]) {
+        updatedTouches[touch.identifier] = {
+          x: touch.clientX,
+          y: touch.clientY,
+        };
       }
     }
-    setFingers(updatedFingers);
+
+    setTouches(updatedTouches);
   };
 
   const handleTouchEnd = (e) => {
-    const updatedFingers = { ...fingers };
-    for (let touch of e.changedTouches) {
-      delete updatedFingers[touch.identifier];
+    e.preventDefault();
+    const updatedTouches = { ...touches };
+
+    for (const touch of e.changedTouches) {
+      delete updatedTouches[touch.identifier];
     }
-    setFingers(updatedFingers);
+
+    setTouches(updatedTouches);
+
+    if (Object.keys(updatedTouches).length === 0) {
+      resetTimer(true);
+      setHighlightedId(null);
+    }
   };
 
-  const renderCircles = () => {
-    return Object.keys(fingers).map((fingerId) => {
-      const { x, y } = fingers[fingerId];
-      const isHighlighted = highlightedFinger === fingerId;
-      return (
-        <div
-          key={fingerId}
-          style={{
-            position: "absolute",
-            left: x - 150 + "px", // Center the circle (150px = 300px/2)
-            top: y - 150 + "px",  // Center the circle
-            width: "300px",
-            height: "300px",
-            borderRadius: "50%",
-            backgroundColor: isHighlighted ? "red" : "blue",
-            border: isHighlighted ? "4px solid yellow" : "2px solid white",
-          }}
-        ></div>
-      );
-    });
+  const resetTimer = (clear = false) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
+    if (!clear) {
+      timerRef.current = setTimeout(() => {
+        const touchIds = Object.keys(touches);
+        if (touchIds.length > 0) {
+          const randomId =
+            touchIds[Math.floor(Math.random() * touchIds.length)];
+          setHighlightedId(randomId);
+        }
+      }, 2000);
+    }
   };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div
-      style={{
-        position: "relative",
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: "#f0f0f0",
-        overflow: "hidden",
-      }}
+      className="App"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {renderCircles()}
+      {Object.entries(touches).map(([id, pos]) => (
+        <div
+          key={id}
+          className={`circle ${highlightedId === id ? "highlighted" : ""}`}
+          style={{
+            left: pos.x - CIRCLE_SIZE / 2,
+            top: pos.y - CIRCLE_SIZE / 2,
+          }}
+        ></div>
+      ))}
     </div>
   );
-}
+};
 
 export default App;
