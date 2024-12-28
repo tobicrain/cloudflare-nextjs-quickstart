@@ -75,13 +75,13 @@ function App() {
           key={fingerId}
           style={{
             position: "absolute",
-            left: x - 25 + "px",
-            top: y - 25 + "px",
-            width: "50px",
-            height: "50px",
+            left: x - 150 + "px", // Center the circle (150px = 300px/2)
+            top: y - 150 + "px",  // Center the circle
+            width: "300px",
+            height: "300px",
             borderRadius: "50%",
             backgroundColor: isHighlighted ? "red" : "blue",
-            border: isHighlighted ? "2px solid yellow" : "2px solid white",
+            border: isHighlighted ? "4px solid yellow" : "2px solid white",
           }}
         ></div>
       );
